@@ -1,0 +1,34 @@
+plugins {
+	id 'java-library'
+}
+
+if (!project.hasProperty("springDataVersion")) {
+	ext.springDataVersion = "latest.release"
+}
+
+repositories {
+	maven { url "https://repo.spring.io/libs-release" }
+}
+
+dependencies {
+	api platform("org.springframework.data:spring-data-releasetrain:$springDataVersion")
+}
+
+
+class SpringVersionLister implements ComponentMetadataVersionLister {
+	final RepositoryResourceAccessor repositoryResourceAccessor
+	@javax.inject.Inject
+	SpringVersionLister(RepositoryResourceAccessor accessor) {
+		repositoryResourceAccessor = accessor
+	}
+	void execute(ComponentMetadataListerDetails details) {
+		def id = details.moduleIdentifier
+		println "!!!!!!!!! execute($details)"
+		repositoryResourceAccessor.withResource("\${id.group}/\${id.name}/versions.txt") {
+			println "!!!!!!!!! withResource $it"
+			def versions = (new String(it.bytes)).split(',') as List
+			details.listed(versions)
+		}
+	}
+}
+repositories.maven.componentVersionsLister = SpringVersionLister
